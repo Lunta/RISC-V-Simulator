@@ -27,7 +27,7 @@ void LOAD_ELF(memif_t* memif, reg_t* entry, char* buf, const size_t size, std::v
 				memif->write(ph[i].p_paddr, ph[i].p_filesz, (uint8_t*)((buf + eh->e_phoff + (eh->e_phentsize * eh->e_phnum)) + ph[i].p_offset));
 				//memif->write(ph[i].p_paddr, ph[i].p_filesz, (uint8_t*)(buf + ph[i].p_offset));
 			}
-			int sz = ph[i].p_memsz - ph[i].p_filesz;
+			int sz = (int)(ph[i].p_memsz - ph[i].p_filesz);
 			if (0 < sz) zeros.resize(sz);
 			if (0 < zeros.size()) memif->write(ph[i].p_paddr + ph[i].p_filesz, sz, &zeros[0]);
 		}
@@ -39,21 +39,21 @@ void LOAD_ELF(memif_t* memif, reg_t* entry, char* buf, const size_t size, std::v
 	char *shstrtab = buf + sh[eh->e_shstrndx].sh_offset;
 	unsigned strtabidx = 0, symtabidx = 0;
 	for (unsigned i = 0; i < eh->e_shnum; i++) {
-		unsigned max_len = sh[eh->e_shstrndx].sh_size - sh[i].sh_name;
-		assert(sh[i].sh_name < sh[eh->e_shstrndx].sh_size);
-		assert(strnlen(shstrtab + sh[i].sh_name, max_len) < max_len);
+		uint64_t max_len = sh[eh->e_shstrndx].sh_size - (uint64_t)sh[i].sh_name;
+		assert((int)sh[i].sh_name < sh[eh->e_shstrndx].sh_size);
+		assert(strnlen(shstrtab + (int)sh[i].sh_name, max_len) < max_len);
 		if ((int)sh[i].sh_type & (int)SH_TYPE::SHT_NOBITS) continue;
 		assert(size >= sh[i].sh_offset + sh[i].sh_size);
-		if (strcmp(shstrtab + sh[i].sh_name, ".strtab") == 0)
+		if (strcmp(shstrtab + (int)sh[i].sh_name, ".strtab") == 0)
 			strtabidx = i;
-		if (strcmp(shstrtab + sh[i].sh_name, ".symtab") == 0)
+		if (strcmp(shstrtab + (int)sh[i].sh_name, ".symtab") == 0)
 			symtabidx = i;
 	}
 	if (strtabidx && symtabidx) {
 		char* strtab = buf + sh[strtabidx].sh_offset;
 		sym_t* sym = (sym_t*)(buf + sh[symtabidx].sh_offset);
 		for (unsigned i = 0; i < sh[symtabidx].sh_size / sizeof(sym_t); i++) {
-			unsigned max_len = sh[strtabidx].sh_size - sym[i].st_name;
+			uint64_t max_len = sh[strtabidx].sh_size - sym[i].st_name;
 			assert(sym[i].st_name < sh[strtabidx].sh_size);
 			assert(strnlen(strtab + sym[i].st_name, max_len) < max_len);
 			symbols[strtab + sym[i].st_name] = sym[i].st_value;

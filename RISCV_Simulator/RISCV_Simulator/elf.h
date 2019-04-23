@@ -1,8 +1,25 @@
 #pragma once
 #include <Windows.h>
 #include <cstdint>
+#include <cassert>
 #include <vector>
 #include <string>
+
+// ELF Note Header (PT_NOTE)
+// Elf32_Nhdr
+typedef struct {
+	uint32_t n_namesz;             /* Name size */
+	uint32_t n_descsz;             /* Content size */
+	uint32_t n_type;               /* Content type */
+} Elf32_Nhdr;
+
+// Elf64_Nhdr
+typedef struct {
+	uint32_t n_namesz;             /* Name size */
+	uint32_t n_descsz;             /* Content size */
+	uint32_t n_type;               /* Content type */
+} Elf64_Nhdr;
+
 
 enum eE_IDENT_IDX {
 	  EI_MAG0	= 0		// File identification
@@ -17,6 +34,7 @@ enum eE_IDENT_IDX {
 	, EI_PAD	= 9		// Start of padding bytes
 	, EI_NIDENT	= 16	// Size of e_ident[]
 };
+
 enum class eEI_MAG : uint8_t {
 	  ELFMAG0 = 0x7f	// e_ident[EI_MAG0]
 	, ELFMAG1 = 'E'		// e_ident[EI_MAG1]
@@ -28,6 +46,7 @@ enum class eEI_CLASS : uint8_t {
 	  ELFCLASSNONE = 0	// Invalid class
 	, ELFCLASS32 = 1	// 32 - bit objects
 	, ELFCLASS64 = 2	// 64 - bit objects
+	, ELFCLASS128 = 3   // 128- bit objects
 };
 
 enum class eEI_DATA : uint8_t {
@@ -35,6 +54,18 @@ enum class eEI_DATA : uint8_t {
 	, ELFDATA2LSB = 1	// 빅 엔디안
 	, ELFDATA2MSB = 2	// 리틀 엔디안
 };
+
+enum class eEI_OSABI : uint8_t {
+	ELFOSABI_SYSV = 0,               /* e_ident[EI_OSABI] == ELFOSABI_SYSV */
+	ELFOSABI_LINUX = 3,              /* e_ident[EI_OSABI] == ELFOSABI_LINUX */
+	ELFOSABI_SOLARIS = 6,            /* e_ident[EI_OSABI] == ELFOSABI_SOLARIS */
+	ELFOSABI_FREEBSD = 9             /* e_ident[EI_OSABI] == ELFOSABI_FREEBSD */
+};
+
+enum class eEI_ABIVERSION : uint8_t {
+	ELFABIVERSION_NONE = 0
+};
+
 struct E_IDENT {
 	union {
 		uint8_t  e_ident[16];
@@ -42,7 +73,10 @@ struct E_IDENT {
 			eEI_MAG e_mag[4];
 			eEI_CLASS e_class;
 			eEI_DATA e_data;
-			uint8_t e_reserved[10];
+			uint8_t e_ver;
+			eEI_OSABI e_os_abi;
+			eEI_ABIVERSION e_abi_version;
+			uint8_t e_reserved[7];
 		};
 	};
 };
@@ -163,29 +197,55 @@ enum class E_VERSION : uint32_t {
 	, EV_CURRENT = 1	// Current version
 };
 
+// ELF Section Header
+enum class SH_NAME : uint32_t {
+	SHN_UNDEF = 0,                   /* Used to mark an undefined or meaningless section reference */
+	SHN_LOPROC = 0xff00,             /* Processor-specific use */
+	SHN_HIPROC = 0xff1f,
+	SHN_LOOS = 0xff20,               /* Environment-specific use */
+	SHN_HIOS = 0xff3f,
+	SHN_ABS = 0xfff1,                /* Indicates that the corresponding reference is an absolute value */
+	SHN_COMMON = 0xfff2,             /* Indicates a symbol that has been declared as a common block */
+	SHN_XINDEX = 0xffff,             /* Indicates section header has additional date in SHT_SYMTAB_SHNDX section */
+	SHN_HIRESERVE = 0xffff,          /* Upper bound of the range of reserved indexes */
+};
+
+// flags entry in the first Elf32_Word of a SHT_GROUP section
+enum {
+	GRP_COMDAT = 0x1,
+	GRP_MASKOS = 0x0ff00000,
+	GRP_MASKPROC = 0xf0000000
+};
+
 enum class SH_TYPE : uint32_t {
-	  SHT_NULL = 0
-	, SHT_PROGBITS = 1				// 프로그램 데이터
-	, SHT_SYMTAB = 2				// 심볼 테이블
-	, SHT_STRTAB = 3				// 스트링 테이블
-	, SHT_RELA = 4					// 재배치 엔트리
-	, SHT_HASH = 5					// 심볼 해시 테이블
-	, SHT_DYNAMIC = 6				// 동적 링크 정보
-	, SHT_NOTE = 7					// Notes(호환성 체크 위한 정보)
-	, SHT_NOBITS = 8				// 파일상에 데이터가 없는 부분(.bss)
-	, SHT_REL = 9					// 재배치 엔트리
-	, SHT_SHLIB = 10
-	, SHT_DYNSYM = 11				// 동적 링크에서 사용되는 심볼 테이블
-	, SHT_INIT_ARRAY = 14			// 생성자 배열(.init)
-	, SHT_FINI_ARRAY = 15			// 소멸자 배열(.fini)
-	, SHT_GNU_verdef = 0x6ffffffd	// 버전 정의 섹션
-	, SHT_GNU_verneed = 0x6ffffffe	// 버전 중요 섹션
-	, SHT_GNU_versym = 0x6fffffff	// 버전 심볼 테이블
-	, SHT_LOPROC = 0x70000000
+	  SHT_NULL = 0                    /* Marks an unused section header */
+	, SHT_PROGBITS = 1                /* Contains information defined by the program */
+	, SHT_SYMTAB = 2                  /* Contains a linker symbol table */
+	, SHT_STRTAB = 3                  /* Contains a string table */
+	, SHT_RELA = 4                    /* Contains "Rela" type relocation entries */
+	, SHT_HASH = 5                    /* Contains a symbol hash table */
+	, SHT_DYNAMIC = 6                 /* Contains dynamic linking tables */
+	, SHT_NOTE = 7                    /* Contains note information */
+	, SHT_NOBITS = 8                  /* Contains uninitialized space; does not take up space in file */
+	, SHT_REL = 9                     /* Contains "Rel" type relocation entries */
+	, SHT_SHLIB = 10                  /* Reserved */
+	, SHT_DYNSYM = 11                 /* Contains a dynamic loader symbol table */
+	, SHT_INIT_ARRAY = 14             /* Contains initialization functions */
+	, SHT_FINI_ARRAY = 15             /* Contains finalization functions */
+	, SHT_PREINIT_ARRAY = 16          /* */
+	, SHT_GROUP = 17                  /* Contains an array of Elf32_Word entries, the first entry is a flag entry */
+	, SHT_SYMTAB_SHNDX = 18           /* Contains extra symbol table info, sh_link to SHT_SYMTAB with SHN_XINDEX set */
+	, SHT_LOOS = 0x60000000           /* Environment-specific use */
+	, SHT_GNU_VERDEF = 0x6ffffffd
+	, SHT_GNU_VERNEED = 0x6ffffffe
+	, SHT_GNU_VERSYM = 0x6fffffff
+	, SHT_HIOS = 0x6fffffff
+	, SHT_LOPROC = 0x70000000         /* Processor-specific use */
 	, SHT_HIPROC = 0x7fffffff
-	, SHT_LOUSER = 0x80000000
+	, SHT_LOUSER = 0x80000000         /* User-specific use */
 	, SHT_HIUSER = 0xffffffff
 };
+
 enum class SH_FLAGS32 : uint32_t {
 	  SHF_WRITE = 0x1				// Writable
 	, SHF_ALLOC = 0x2				// Occupies memory during execution
@@ -228,11 +288,12 @@ enum class P_TYPE : uint32_t {
 	, PT_SHLIB = 5
 	, PT_PHDR = 6 					// 헤더 테이블 자신의 위치와 크기
 	, PT_TLS = 7 					// 스레드 지역 저장소
-	, PT_LOOS = 0x60000000
+	, PT_LOOS = 0x60000000          /* Environment-specific use */
+	, PT_GNU_EH_FRAME = 0x6474e550  /* GCC .eh_frame_hdr segment */
+	, PT_GNU_STACK = 0x6474e551     /* GCC stack executability */
+	, PT_GNU_RELRO = 0x6474e552     /* GCC Read-only after relocation */
 	, PT_HIOS = 0x6fffffff
-	, PT_GNU_EH_FRAME = 0x6474e550	// GNU.eh_frame_hdr 세그먼트
-	, PT_GNU_STACK = 0x6474e551		// 스택 실행 가능성
-	, PT_LOPROC = 0x70000000
+	, PT_LOPROC = 0x70000000        /* Processor-specific use */
 	, PT_HIPROC = 0x7fffffff
 };
 
@@ -244,6 +305,43 @@ enum class P_FLAGS : uint32_t {
 	, PF_MASKPROC	= 0xf0000000	// Unspecified
 };
 
+
+// st_info bind
+enum {
+	STB_LOCAL = 0,                   /* Not visible outside the object file */
+	STB_GLOBAL = 1,                  /* Global symbol, visible to all object files */
+	STB_WEAK = 2,                    /* Global scope, but with lower precedence than global symbols */
+	STB_LOOS = 10,                   /* Environment-specific use */
+	STB_HIOS = 12,
+	STB_LOPROC = 13,                 /* Processor-specific use */
+	STB_HIPROC = 15
+};
+
+// st_info type
+enum {
+	STT_NOTYPE = 0,                  /* No type specified (e.g., an absolute symbol) */
+	STT_OBJECT = 1,                  /* Data object */
+	STT_FUNC = 2,                    /* Function entry point */
+	STT_SECTION = 3,                 /* Symbol is associated with a section */
+	STT_FILE = 4,                    /* Source file associated with the object file */
+	STT_LOOS = 10,                   /* Environment-specific use */
+	STT_HIOS = 12,
+	STT_LOPROC = 13,                 /* Processor-specific use */
+	STT_HIPROC = 15
+};
+
+// st_other visibility
+enum {
+	STV_DEFAULT = 0,
+	STV_INTERNAL = 1,
+	STV_HIDDEN = 2,
+	STV_PROTECTED = 3
+};
+
+inline constexpr uint8_t GET_ST_BIND(uint32_t i) { return i >> 4; }
+inline constexpr uint8_t GET_ST_TYPE(uint32_t i) { return i & 0xf; }
+inline constexpr uint8_t GET_ST_INFO(uint32_t b, uint32_t t) { return (b << 4) | (t & 0xf); }
+
 typedef struct {
 	union {
 		uint8_t  e_ident[16];	// Magic number and other info - 0x7f 45 4c 46 01(32bit) 01(엔디안) (ELF버전) (OS정보) (App binary interface) ...
@@ -251,12 +349,15 @@ typedef struct {
 			eEI_MAG e_mag[4];
 			eEI_CLASS e_class;
 			eEI_DATA e_data;
-			uint8_t e_reserved[10];
+			uint8_t e_ver;
+			eEI_OSABI e_os_abi;
+			eEI_ABIVERSION e_abi_version;
+			uint8_t e_reserved[7];
 		};
 	};
 	E_TYPE	 e_type;		// Object file type					
 	E_MACHINE e_machine;	// CPU architecture					
-	E_VERSION e_version;		// Object file version				
+	E_VERSION e_version;	// Object file version				
 	uint32_t e_entry;		// Entry point virtual address		
 	uint32_t e_phoff;		// Program header table file offset	
 	uint32_t e_shoff;		// Section header table file offset
@@ -270,7 +371,7 @@ typedef struct {
 } Elf32_Ehdr;
 
 typedef struct {									
-	uint32_t sh_name;		// Section name (string tbl index)	
+	SH_NAME	 sh_name;		// Section name (string tbl index)	
 	SH_TYPE	 sh_type;		// Section type						
 	SH_FLAGS32 sh_flags;		// Section flags					
 	uint32_t sh_addr;		// Section virtual addr at execution
@@ -310,7 +411,10 @@ typedef struct {
 			eEI_MAG e_mag[4];
 			eEI_CLASS e_class;
 			eEI_DATA e_data;
-			uint8_t e_reserved[10];
+			uint8_t e_ver;
+			eEI_OSABI e_os_abi;
+			eEI_ABIVERSION e_abi_version;
+			uint8_t e_reserved[7];
 		};
 	};
 	E_TYPE	 e_type;		// Object file type
@@ -329,9 +433,9 @@ typedef struct {
 } Elf64_Ehdr;
 
 typedef struct {
-	uint32_t sh_name;		// Section name (string tbl index)
+	SH_NAME  sh_name;		// Section name (string tbl index)
 	SH_TYPE	 sh_type;		// Section type
-	SH_FLAGS64 sh_flags;		// Section flags
+	SH_FLAGS64 sh_flags;	// Section flags
 	uint64_t sh_addr;		// Section virtual addr at execution
 	uint64_t sh_offset;		// Section file offset
 	uint64_t sh_size;		// Section size in bytes
@@ -363,7 +467,7 @@ typedef struct {
 
 class ELF64 {
 public:
-	ELF64(std::string file_path) : mhFile(NULL), mhFMO(NULL), mFileSize(0), mpFile(nullptr) {
+	ELF64(std::string file_path) : mhFile(NULL), mhFMO(NULL), mFileSize(0), mpFile(nullptr), mEntry(0) {
 		struct stat s;
 		if (0 != stat(file_path.c_str(), &s)) { printf("<ERROR> fstat\n"); while (true); }
 		mFileSize = s.st_size;
@@ -374,9 +478,51 @@ public:
 		mhFMO = CreateFileMapping(mhFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (mhFMO == NULL) { printf("<ERROR> CreateFileMapping\n"); while (true); }
 
-		uint8_t* buf = (uint8_t*)MapViewOfFile(mhFMO, FILE_MAP_READ, 0, 0, 0);
+		mpFile = (uint8_t*)MapViewOfFile(mhFMO, FILE_MAP_READ, 0, 0, 0);
 
-		const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
+		mElfHeader = (Elf64_Ehdr*)mpFile;
+		Elf64_Phdr* ph = (Elf64_Phdr*)(mpFile + mElfHeader->e_phoff);
+		mEntry = mElfHeader->e_entry;
+		assert(mFileSize >= mElfHeader->e_phoff + mElfHeader->e_phnum * sizeof(*ph));
+		for (unsigned i = 0; i < mElfHeader->e_phnum; i++) {
+			if (ph[i].p_type == P_TYPE::PT_LOAD && ph[i].p_memsz) {
+				if (ph[i].p_filesz) {
+					assert(mFileSize >= ph[i].p_offset + ph[i].p_filesz);
+					memif->write(ph[i].p_paddr, ph[i].p_filesz, (uint8_t*)((mpFile + mElfHeader->e_phoff + (mElfHeader->e_phentsize * mElfHeader->e_phnum)) + ph[i].p_offset));
+					//memif->write(ph[i].p_paddr, ph[i].p_filesz, (uint8_t*)(buf + ph[i].p_offset));
+				}
+				int sz = (int)(ph[i].p_memsz - ph[i].p_filesz);
+				if (0 < sz) mZeros.resize(sz);
+				if (0 < mZeros.size()) memif->write(ph[i].p_paddr + ph[i].p_filesz, sz, &mZeros[0]);
+			}
+		}
+		Elf64_Shdr* sh = (Elf64_Shdr*)(mpFile + mElfHeader->e_shoff);
+		assert(mFileSize >= mElfHeader->e_shoff + mElfHeader->e_shnum * sizeof(*sh));
+		assert(mElfHeader->e_shstrndx < mElfHeader->e_shnum);
+		assert(mFileSize >= sh[mElfHeader->e_shstrndx].sh_offset + sh[mElfHeader->e_shstrndx].sh_size);
+		char* shstrtab = (char*)(mpFile + sh[mElfHeader->e_shstrndx].sh_offset);
+		uint32_t strtabidx = 0, symtabidx = 0;
+		for (unsigned i = 0; i < mElfHeader->e_shnum; i++) {
+			uint64_t max_len = sh[mElfHeader->e_shstrndx].sh_size - (uint64_t)sh[i].sh_name;
+			assert((int)sh[i].sh_name < sh[mElfHeader->e_shstrndx].sh_size);
+			assert(strnlen(shstrtab + (int)sh[i].sh_name, max_len) < max_len);
+			if ((int)sh[i].sh_type & (int)SH_TYPE::SHT_NOBITS) continue;
+			assert(mFileSize >= sh[i].sh_offset + sh[i].sh_size);
+			if (strcmp(shstrtab + (int)sh[i].sh_name, ".strtab") == 0)
+				strtabidx = i;
+			if (strcmp(shstrtab + (int)sh[i].sh_name, ".symtab") == 0)
+				symtabidx = i;
+		}
+		if (strtabidx && symtabidx) {
+			char* strtab = (char*)(mpFile + sh[strtabidx].sh_offset);
+			Elf64_Sym* sym = (Elf64_Sym*)(mpFile + sh[symtabidx].sh_offset);
+			for (unsigned i = 0; i < sh[symtabidx].sh_size / sizeof(Elf64_Sym); i++) {
+				uint64_t max_len = sh[strtabidx].sh_size - sym[i].st_name;
+				assert(sym[i].st_name < sh[strtabidx].sh_size);
+				assert(strnlen(strtab + sym[i].st_name, max_len) < max_len);
+				mSymbols[strtab + sym[i].st_name] = sym[i].st_value;
+			}
+		}
 
 	}
 	~ELF64() {
@@ -385,9 +531,29 @@ public:
 	}
 
 private:
-	HANDLE		mhFile;
-	HANDLE		mhFMO;
-	size_t		mFileSize;
-	uint8_t*	mpFile;
+	struct Segment {
+		Elf64_Phdr* mHeader;
+		uint8_t*	mpBody;
+		size_t		mBodySize;
+		Segment() : mHeader(nullptr), mpBody(nullptr), mBodySize(0) {}
+	};
 
+	struct Section {
+		Elf64_Shdr* mHeader;
+		uint8_t*	mpBody;
+		size_t		mBodySize;
+		Section() : mHeader(nullptr), mpBody(nullptr), mBodySize(0) {}
+	};
+
+private:
+	HANDLE								mhFile;
+	HANDLE								mhFMO;
+	size_t								mFileSize;
+	uint8_t*							mpFile;
+	Elf64_Ehdr*							mElfHeader;
+	std::vector<Segment>				mSegments;
+	std::vector<Section>				mSections;
+	uint64_t							mEntry;
+	std::vector<uint8_t>				mZeros;
+	std::map<std::string, uint64_t>		mSymbols;
 };

@@ -17,26 +17,35 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="elf2hex.cpp">
-      <Filter>elf</Filter>
-    </ClCompile>
-    <ClCompile Include="elfloader.cpp">
-      <Filter>elf</Filter>
-    </ClCompile>
     <ClCompile Include="htif_hexwriter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="memif.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="elf2hex.cpp">
+      <Filter>헤더 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="elfloader.cpp">
+      <Filter>헤더 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="elf\elf.cpp">
+      <Filter>elf</Filter>
+    </ClCompile>
+    <ClCompile Include="elf\elf-file.cpp">
+      <Filter>elf</Filter>
+    </ClCompile>
+    <ClCompile Include="elf\elf-format.cpp">
+      <Filter>elf</Filter>
+    </ClCompile>
+    <ClCompile Include="elf\util.cpp">
+      <Filter>elf</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="elf.h">
-      <Filter>elf</Filter>
-    </ClInclude>
-    <ClInclude Include="elfloader.h">
-      <Filter>elf</Filter>
-    </ClInclude>
     <ClInclude Include="htif_hexwriter.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
@@ -45,6 +54,27 @@
     </ClInclude>
     <ClInclude Include="instruction.h">
       <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="elf.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="elfloader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="elf\elf-file.h">
+      <Filter>elf</Filter>
+    </ClInclude>
+    <ClInclude Include="elf\elf-format.h">
+      <Filter>elf</Filter>
+    </ClInclude>
+    <ClInclude Include="elf\elf.h">
+      <Filter>elf</Filter>
+    </ClInclude>
+    <ClInclude Include="elf\host-endian.h">
+      <Filter>elf</Filter>
+    </ClInclude>
+    <ClInclude Include="elf\util.h">
+      <Filter>elf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

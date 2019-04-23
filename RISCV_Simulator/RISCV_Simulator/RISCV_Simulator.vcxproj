@@ -118,16 +118,32 @@
     <ClCompile Include="elf2hex.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">아니오</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">아니오</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">아니오</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">아니오</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="elfloader.cpp" />
+    <ClCompile Include="elfloader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="elf\elf-file.cpp" />
+    <ClCompile Include="elf\elf-format.cpp" />
+    <ClCompile Include="elf\elf.cpp" />
+    <ClCompile Include="elf\util.cpp" />
     <ClCompile Include="htif_hexwriter.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="memif.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="elf.h" />
-    <ClInclude Include="elfloader.h" />
+    <ClInclude Include="elf.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="elfloader.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="elf\elf-file.h" />
+    <ClInclude Include="elf\elf-format.h" />
+    <ClInclude Include="elf\elf.h" />
+    <ClInclude Include="elf\host-endian.h" />
+    <ClInclude Include="elf\util.h" />
     <ClInclude Include="htif_hexwriter.h" />
     <ClInclude Include="instruction.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">아니오</ExcludedFromBuild>
