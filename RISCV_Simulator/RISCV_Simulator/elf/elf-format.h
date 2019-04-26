@@ -1,5 +1,5 @@
 #pragma once
-
+#include <functional>
 typedef std::function<const char*(const char *type)> elf_symbol_colorize_fn;
 
 const char* elf_null_symbol_colorize(const char *type);

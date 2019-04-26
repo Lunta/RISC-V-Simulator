@@ -9,7 +9,7 @@ extern bool parse_integral(std::string valstr, long long &val);
 
 extern std::string format_string(const char* fmt, ...);
 extern void log_format(FILE *file, const char* fmt, va_list arg);
-extern void panic(const char* fmt, ...); __attribute__((noreturn));
+extern void panic(const char* fmt, ...);
 extern void debug(const char* fmt, ...);
 
 extern const char* signal_name(int signum);

@@ -50,28 +50,31 @@ constexpr uint32_t BIT_OFFSET_IMM_B_10_5	= 25;
 constexpr uint32_t BIT_OFFSET_IMM_B_4_1		= 8;
 constexpr uint32_t BIT_OFFSET_IMM_B_11		= 7;
 
-constexpr uint32_t BIT_ALIGN_MASK_OPCODE		= 0b00000000'00000000'01111111;
-constexpr uint32_t BIT_ALIGN_MASK_REGISTER_DEST	= 0b00000000'00000000'00011111;
-constexpr uint32_t BIT_ALIGN_MASK_FUNCT3		= 0b00000000'00000000'00000111;
-constexpr uint32_t BIT_ALIGN_MASK_REGISTER_SRC1	= 0b00000000'00000000'00011111;
-constexpr uint32_t BIT_ALIGN_MASK_REGISTER_SRC2	= 0b00000000'00000000'00011111;
-constexpr uint32_t BIT_ALIGN_MASK_FUNCT7		= 0b00000000'00000000'01111111;
-constexpr uint32_t BIT_ALIGN_MASK_REGISTER_SRC3 = 0b00000000'00000000'00011111;
-constexpr uint32_t BIT_ALIGN_MASK_FUNCT2		= 0b00000000'00000000'00000011;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_U_31_12	= 0b00001111'11111111'11111111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_J_20		= 0b00000000'00000000'00000001;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_J_10_1	= 0b00000000'00000011'11111111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_J_11		= 0b00000000'00000000'00000001;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_J_19_12	= 0b00000000'00000000'11111111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_I_11_0	= 0b00000000'00001111'11111111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_S_11_5	= 0b00000000'00000000'01111111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_S_4_0		= 0b00000000'00000000'00011111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_B_12		= 0b00000000'00000000'00000001;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_B_10_5	= 0b00000000'00000000'00111111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_B_4_1		= 0b00000000'00000000'00001111;
-constexpr uint32_t BIT_ALIGN_MASK_IMM_B_11		= 0b00000000'00000000'00000001;
+constexpr uint32_t BIT_ALIGN_MASK_OPCODE			= 0b00000000'00000000'01111111;
+constexpr uint32_t BIT_ALIGN_MASK_REGISTER_DEST		= 0b00000000'00000000'00011111;
+constexpr uint32_t BIT_ALIGN_MASK_FUNCT3			= 0b00000000'00000000'00000111;
+constexpr uint32_t BIT_ALIGN_MASK_REGISTER_SRC1		= 0b00000000'00000000'00011111;
+constexpr uint32_t BIT_ALIGN_MASK_REGISTER_SRC2		= 0b00000000'00000000'00011111;
+constexpr uint32_t BIT_ALIGN_MASK_FUNCT7			= 0b00000000'00000000'01111111;
+constexpr uint32_t BIT_ALIGN_MASK_REGISTER_SRC3		= 0b00000000'00000000'00011111;
+constexpr uint32_t BIT_ALIGN_MASK_FUNCT2			= 0b00000000'00000000'00000011;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_U_31_12		= 0b00001111'11111111'11111111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_J_20			= 0b00000000'00000000'00000001;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_J_10_1		= 0b00000000'00000011'11111111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_J_11			= 0b00000000'00000000'00000001;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_J_19_12		= 0b00000000'00000000'11111111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_I_11_0		= 0b00000000'00001111'11111111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_I_11_0_SIGN	= 0b00000000'00001000'00000000;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_S_11_5		= 0b00000000'00000000'01111111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_S_4_0			= 0b00000000'00000000'00011111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_B_12			= 0b00000000'00000000'00000001;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_B_10_5		= 0b00000000'00000000'00111111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_B_4_1			= 0b00000000'00000000'00001111;
+constexpr uint32_t BIT_ALIGN_MASK_IMM_B_11			= 0b00000000'00000000'00000001;
 
-enum class InstType {
+enum class InstFormat : uint8_t { INVALID, R_TYPE, R4_TYPE, I_TYPE, S_TYPE, B_TYPE, U_TYPE, J_TYPE };
+
+enum class InstType : uint8_t {
 	INVALID
 
 	// RV32I Base Inst Set
@@ -99,9 +102,9 @@ enum class InstType {
 	, XORI
 	, ORI
 	, ANDI
-	, SLLI
-	, SRLI
-	, SRAI
+	// , SLLI
+	// , SRLI
+	// , SRAI
 	, ADD
 	, SUB
 	, SLL
@@ -127,9 +130,9 @@ enum class InstType {
 	, LWU
 	, LD
 	, SD
-	// , SLLI
-	// , SRLI
-	// , SRAI
+	, SLLI
+	, SRLI
+	, SRAI
 	, ADDIW
 	, SLLIW
 	, SRLIW
@@ -254,7 +257,7 @@ enum class InstType {
 	, FMV_D_X
 };
 
-enum class CSRType {
+enum class CSRType : uint8_t {
 	INVALID
 
 	// Floating-Point Control and Status Registers
@@ -272,8 +275,9 @@ enum class CSRType {
 };
 
 constexpr InstType GetInstType(uint32_t inst);
+constexpr InstFormat GetInstFormat(InstType inst_type);
 std::string GetInstName(InstType inst_t);
-constexpr CSRType GetCSR(uint32_t imm_11_0);
+constexpr CSRType GetCSRType(uint32_t imm_11_0);
 
 constexpr InstType GetInstType(uint32_t inst) {
 	uint32_t opcode = (inst >> BIT_OFFSET_OPCODE) & BIT_ALIGN_MASK_OPCODE;
@@ -328,17 +332,19 @@ constexpr InstType GetInstType(uint32_t inst) {
 		case 0b111:	return InstType::ORI;
 		case 0b110:	return InstType::ANDI;
 		case 0b001: {
-			uint32_t funct6 = (imm_i_11_0 >> 6) & 0b00111111;
-			if (0b000000 == funct6) return InstType::SLLI;
-			//if (0b0000000 == funct7) return InstType::SLLI; // rv32i
+			//uint32_t imm = (imm_i_11_0 >> 7) & 0b01111111;
+			uint32_t imm = (imm_i_11_0 >> 6) & 0b00111111;
+			if (0b000000 == imm) return InstType::SLLI;
+			//if (0b0000000 == imm) return InstType::SLLI; // rv32i
 			break;
 		}
 		case 0b101: {
-			uint32_t funct6 = (imm_i_11_0 >> 6) & 0b00111111;
-			if (0b000000 == funct6) return InstType::SRLI;
-			if (0b010000 == funct6) return InstType::SRAI;
-			// if (0b0000000 == funct7) return InstType::SRLI; // rv32i
-			// if (0b0100000 == funct7) return InstType::SRAI; // rv32i
+			//uint32_t imm = (imm_i_11_0 >> 7) & 0b01111111;
+			uint32_t imm = (imm_i_11_0 >> 6) & 0b00111111;
+			if (0b000000 == imm) return InstType::SRLI;
+			if (0b010000 == imm) return InstType::SRAI;
+			// if (0b0000000 == imm) return InstType::SRLI; // rv32i
+			// if (0b0100000 == imm) return InstType::SRAI; // rv32i
 			break;
 		}
 		}
@@ -446,7 +452,7 @@ constexpr InstType GetInstType(uint32_t inst) {
 		break;
 	}
 	case 0b0101111: {
-		uint32_t funct5 = (imm_s_11_5 >> 2) & 0b00011111;
+		uint32_t funct5 = (funct7 >> 2) & 0b00011111;
 		switch (funct3) {
 		case 0b010:
 			switch (funct5) {
@@ -640,10 +646,190 @@ constexpr InstType GetInstType(uint32_t inst) {
 	}
 	default:
 		std::cout << "[INVALID INSTRUCTION!]: "<< std::bitset<32>(inst) <<"\n";
-		//while (true);
 		break;
 	}
 	return InstType::INVALID;
+}
+
+constexpr InstFormat GetInstFormat(InstType inst_type) {
+	switch (inst_type) {
+	// func7 | 0000000
+	case InstType::ADD:
+	case InstType::SUB:
+	case InstType::SLL:
+	case InstType::SLT:
+	case InstType::SLTU:
+	case InstType::XOR:
+	case InstType::SRL:
+	case InstType::SRA:
+	case InstType::OR:
+	case InstType::AND:
+	case InstType::SLLIW:
+	case InstType::SRLIW:
+	case InstType::SRAIW:
+	case InstType::ADDW:
+	case InstType::SUBW:
+	case InstType::SLLW:
+	case InstType::SRLW:
+	case InstType::SRAW:
+	case InstType::MUL:
+	case InstType::MULH:
+	case InstType::MULHSU:
+	case InstType::MULHU:
+	case InstType::DIV:
+	case InstType::DIVU:
+	case InstType::REM:
+	case InstType::REMU:
+	case InstType::MULW:
+	case InstType::DIVW:
+	case InstType::DIVUW:
+	case InstType::REMW:
+	case InstType::REMUW:
+	case InstType::FADD_S:
+	case InstType::FSUB_S:
+	case InstType::FMUL_S:
+	case InstType::FDIV_S:
+	case InstType::FSQRT_S:
+	case InstType::FSGNJ_S:
+	case InstType::FSGNJN_S:
+	case InstType::FSGNJX_S:
+	case InstType::FMIN_S:
+	case InstType::FMAX_S:
+	case InstType::FCVT_W_S:
+	case InstType::FCVT_WU_S:
+	case InstType::FMV_X_W:
+	case InstType::FEQ_S:
+	case InstType::FLT_S:
+	case InstType::FLE_S:
+	case InstType::FCLASS_S:
+	case InstType::FCVT_S_W:
+	case InstType::FCVT_S_WU:
+	case InstType::FMV_W_X:
+	case InstType::FCVT_L_S:
+	case InstType::FCVT_LU_S:
+	case InstType::FCVT_S_L:
+	case InstType::FCVT_S_LU:
+	case InstType::FADD_D:
+	case InstType::FSUB_D:
+	case InstType::FMUL_D:
+	case InstType::FDIV_D:
+	case InstType::FSQRT_D:
+	case InstType::FSGNJ_D:
+	case InstType::FSGNJN_D:
+	case InstType::FSGNJX_D:
+	case InstType::FMIN_D:
+	case InstType::FMAX_D:
+	case InstType::FCVT_S_D:
+	case InstType::FCVT_D_S:
+	case InstType::FEQ_D:
+	case InstType::FLT_D:
+	case InstType::FLE_D:
+	case InstType::FCLASS_D:
+	case InstType::FCVT_W_D:
+	case InstType::FCVT_WU_D:
+	case InstType::FCVT_D_W:
+	case InstType::FCVT_D_WU:
+	case InstType::FCVT_L_D:
+	case InstType::FCVT_LU_D:
+	case InstType::FMV_X_D:
+	case InstType::FCVT_D_L:
+	case InstType::FCVT_D_LU:
+	case InstType::FMV_D_X:
+
+	// func7 | 00000 aq rl
+	case InstType::LR_W:
+	case InstType::SC_W:
+	case InstType::AMOSWAP_W:
+	case InstType::AMOADD_W:
+	case InstType::AMOXOR_W:
+	case InstType::AMOAND_W:
+	case InstType::AMOOR_W:
+	case InstType::AMOMIN_W:
+	case InstType::AMOMAX_W:
+	case InstType::AMOMINU_W:
+	case InstType::AMOMAXU_W:
+	case InstType::LR_D:
+	case InstType::SC_D:
+	case InstType::AMOSWAP_D:
+	case InstType::AMOADD_D:
+	case InstType::AMOXOR_D:
+	case InstType::AMOAND_D:
+	case InstType::AMOOR_D:
+	case InstType::AMOMIN_D:
+	case InstType::AMOMAX_D:
+	case InstType::AMOMINU_D:
+	case InstType::AMOMAXU_D:
+		return InstFormat::R_TYPE;
+
+	case InstType::FMADD_S:
+	case InstType::FMSUB_S:
+	case InstType::FNMSUB_S:
+	case InstType::FNMADD_S:
+	case InstType::FMADD_D:
+	case InstType::FMSUB_D:
+	case InstType::FNMSUB_D:
+	case InstType::FNMADD_D:
+		return InstFormat::R4_TYPE;
+
+	case InstType::JALR:
+	case InstType::LB:
+	case InstType::LH:
+	case InstType::LW:
+	case InstType::LBU:
+	case InstType::LHU:
+	case InstType::ADDI:
+	case InstType::SLTI:
+	case InstType::SLTIU:
+	case InstType::XORI:
+	case InstType::ORI:
+	case InstType::ANDI:
+	case InstType::FENCE:
+	case InstType::FENCE_I:
+	case InstType::ECALL:
+	case InstType::EBREAK:
+	case InstType::CSRRW:
+	case InstType::CSRRS:
+	case InstType::CSRRC:
+	case InstType::CSRRWI:
+	case InstType::CSRRSI:
+	case InstType::CSRRCI:
+	case InstType::LWU:
+	case InstType::LD:
+	case InstType::SLLI:
+	case InstType::SRLI:
+	case InstType::SRAI:
+	case InstType::ADDIW:
+	case InstType::FLW:
+	case InstType::FLD:
+		return InstFormat::I_TYPE;
+
+	case InstType::SB:
+	case InstType::SH:
+	case InstType::SW:
+	case InstType::SD:
+	case InstType::FSW:
+	case InstType::FSD:
+		return InstFormat::S_TYPE;
+
+	case InstType::BEQ:
+	case InstType::BNE:
+	case InstType::BLT:
+	case InstType::BGE:
+	case InstType::BLTU:
+	case InstType::BGEU:
+		return InstFormat::B_TYPE;
+
+	case InstType::LUI:
+	case InstType::AUIPC:
+		return InstFormat::U_TYPE;
+
+	case InstType::JAL:
+		return InstFormat::J_TYPE;
+	default:
+		std::cout << "INVALID instruction format!\n";
+		break;
+	}
+	return InstFormat::INVALID;
 }
 
 inline std::string GetInstName(InstType inst_t)
@@ -834,7 +1020,7 @@ inline std::string GetInstName(InstType inst_t)
 	return name;
 }
 
-constexpr CSRType GetCSR(uint32_t imm_i_11_0) {
+constexpr CSRType GetCSRType(uint32_t imm_i_11_0) {
 	switch (imm_i_11_0) {
 	case 0x001: return CSRType::fflags;
 	case 0x002: return CSRType::frm;
@@ -849,3 +1035,205 @@ constexpr CSRType GetCSR(uint32_t imm_i_11_0) {
 	return CSRType::INVALID;
 }
 
+class Instruction {
+public:
+	Instruction(uint32_t inst) {
+		m_bit = inst;
+		m_type = GetInstType(inst);
+		m_format = GetInstFormat(m_type);
+		m_imm = -1;
+		m_rd = m_rs1 = m_rs2 = m_rs3 = m_aq = m_rl = -1;
+
+		switch (m_format) {
+		case InstFormat::R_TYPE: {
+			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
+			m_rs1 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC1) & BIT_ALIGN_MASK_REGISTER_SRC1);
+			m_rs2 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC2) & BIT_ALIGN_MASK_REGISTER_SRC2);
+			switch (m_type) {
+			case InstType::LR_W:
+			case InstType::SC_W:
+			case InstType::AMOSWAP_W:
+			case InstType::AMOADD_W:
+			case InstType::AMOXOR_W:
+			case InstType::AMOAND_W:
+			case InstType::AMOOR_W:
+			case InstType::AMOMIN_W:
+			case InstType::AMOMAX_W:
+			case InstType::AMOMINU_W:
+			case InstType::AMOMAXU_W:
+			case InstType::LR_D:
+			case InstType::SC_D:
+			case InstType::AMOSWAP_D:
+			case InstType::AMOADD_D:
+			case InstType::AMOXOR_D:
+			case InstType::AMOAND_D:
+			case InstType::AMOOR_D:
+			case InstType::AMOMIN_D:
+			case InstType::AMOMAX_D:
+			case InstType::AMOMINU_D:
+			case InstType::AMOMAXU_D:
+				uint32_t funct7 = (m_bit >> BIT_OFFSET_FUNCT7) & BIT_ALIGN_MASK_FUNCT7;
+				m_aq = (int8_t)((funct7 >> 1) & 0b00000001);
+				m_rl = (int8_t)(funct7 & 0b00000001);
+				break;
+			}
+			break;
+		}
+		case InstFormat::R4_TYPE: {
+			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
+			m_rs1 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC1) & BIT_ALIGN_MASK_REGISTER_SRC1);
+			m_rs2 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC2) & BIT_ALIGN_MASK_REGISTER_SRC2);
+			m_rs3 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC3) & BIT_ALIGN_MASK_REGISTER_SRC3);
+			break;
+		}
+		case InstFormat::I_TYPE: {
+			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
+			m_rs1 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC1) & BIT_ALIGN_MASK_REGISTER_SRC1);
+
+			int64_t temp = (int64_t)((m_bit >> BIT_OFFSET_IMM_I_11_0) & BIT_ALIGN_MASK_IMM_I_11_0);
+			if (0 < (temp & BIT_ALIGN_MASK_IMM_I_11_0_SIGN)) {
+				temp = temp | ~(int64_t)BIT_ALIGN_MASK_IMM_I_11_0;
+			}
+			m_imm = temp;
+			break;
+		}
+		case InstFormat::S_TYPE: {
+			m_rs1 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC1) & BIT_ALIGN_MASK_REGISTER_SRC1);
+			m_rs2 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC2) & BIT_ALIGN_MASK_REGISTER_SRC2);
+
+			uint32_t imm11_5 = (m_bit >> BIT_OFFSET_IMM_S_11_5) & BIT_ALIGN_MASK_IMM_S_11_5;
+			uint32_t imm4_0 = (m_bit >> BIT_OFFSET_IMM_S_4_0) & BIT_ALIGN_MASK_IMM_S_4_0;
+			m_imm = (int64_t)(imm4_0 | ((imm11_5 << 5) & 0b00001111'11100000));
+			break;
+		}
+		case InstFormat::B_TYPE: {
+			m_rs1 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC1) & BIT_ALIGN_MASK_REGISTER_SRC1);
+			m_rs2 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC2) & BIT_ALIGN_MASK_REGISTER_SRC2);
+
+			uint32_t imm12 = (m_bit >> BIT_OFFSET_IMM_B_12) & BIT_ALIGN_MASK_IMM_B_12;
+			uint32_t imm11 = (m_bit >> BIT_OFFSET_IMM_B_11) & BIT_ALIGN_MASK_IMM_B_11;
+			uint32_t imm10_5 = (m_bit >> BIT_OFFSET_IMM_B_10_5) & BIT_ALIGN_MASK_IMM_B_10_5;
+			uint32_t imm4_1 = (m_bit >> BIT_OFFSET_IMM_B_4_1) & BIT_ALIGN_MASK_IMM_B_4_1;
+			m_imm = (int64_t)(((imm12 << 12)	& 0b00010000'00000000)
+							| ((imm11 << 11)	& 0b00001000'00000000)
+							| ((imm10_5 << 5)	& 0b00000111'11100000)
+							| ((imm4_1 << 1)	& 0b00000000'00011110));
+			break;
+		}
+		case InstFormat::U_TYPE: {
+			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
+			m_imm = (int64_t)(m_bit & MASK_IMM_U_31_12);
+			break;
+		}
+		case InstFormat::J_TYPE: {
+			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
+			
+			uint32_t imm20 = (m_bit >> BIT_OFFSET_IMM_J_20) & BIT_ALIGN_MASK_IMM_J_20;
+			uint32_t imm19_12 = (m_bit >> BIT_OFFSET_IMM_J_19_12) & BIT_ALIGN_MASK_IMM_J_19_12;
+			uint32_t imm11 = (m_bit >> BIT_OFFSET_IMM_J_11) & BIT_ALIGN_MASK_IMM_J_11;
+			uint32_t imm10_1 = (m_bit >> BIT_OFFSET_IMM_J_10_1) & BIT_ALIGN_MASK_IMM_J_10_1;
+			int64_t temp = (int64_t)(((imm20 << 20)		& 0b00000000'00010000'00000000'00000000)
+									| ((imm19_12 << 12)	& 0b00000000'00001111'11110000'00000000)
+									| ((imm11 << 11)	& 0b00000000'00000000'00001000'00000000)
+									| ((imm10_1 << 1)	& 0b00000000'00000000'00000111'11111110));
+			if (1 == imm20) {
+				temp = temp | ~(int64_t)0b00000000'00011111'11111111'11111111;
+			}
+
+			m_imm = temp;
+			break;
+		}
+		default:
+			std::cout << "INVALID instruction!\n";
+			while (true);
+			break;
+		}
+	}
+
+	uint32_t		m_bit;
+	InstType		m_type;
+	InstFormat		m_format;
+	int8_t			m_rd;
+	int8_t			m_rs1;
+	int8_t			m_rs2;
+	int8_t			m_rs3;
+	int8_t			m_aq;
+	int8_t			m_rl;
+	int64_t			m_imm;
+};
+
+std::ostream& operator<<(std::ostream& os, const Instruction& inst) {
+	os << "[Bit]: " << std::bitset<32>(inst.m_bit) << ", [Instruction]: ";
+	os.flags(std::ios::left);
+	os.width(9);
+	os << GetInstName(inst.m_type);
+	os.flags(std::ios::right);
+	switch (inst.m_format) {
+	case InstFormat::R_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rd);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs1);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs2);
+		os.width(1); 
+		break;
+	case InstFormat::R4_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rd);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs1);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs2);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs3);
+		os.width(1); 
+		break;
+	case InstFormat::I_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rd);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs1);
+		os.width(2); os << " " << std::to_string(inst.m_imm);
+		os.width(1); 
+		break;
+	case InstFormat::S_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs1);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs2);
+		os.width(2); os << " " << std::to_string(inst.m_imm);
+		os.width(1);
+		break;
+	case InstFormat::B_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs1);
+		os.width(3); os << "x";
+		os.width(2); os << std::to_string(inst.m_rs2);
+		os.width(2); os << " " << std::to_string(inst.m_imm);
+		os.width(1);
+		break;
+	case InstFormat::U_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rd);
+		os.width(2); os << "  0x" << std::hex << inst.m_imm;
+		os.width(1);
+		break;
+	case InstFormat::J_TYPE:
+		os.fill(' ');
+		os.width(2); os << "x";
+		os.width(2); os << std::to_string(inst.m_rd);
+		os.width(2); os << " " << inst.m_imm;
+		os.width(1);
+		break;
+	}
+	os.width(5);
+	os << "";
+	return os;
+}

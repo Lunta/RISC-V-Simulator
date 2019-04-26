@@ -17,18 +17,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="htif_hexwriter.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="memif.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="elf2hex.cpp">
-      <Filter>헤더 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="elfloader.cpp">
-      <Filter>헤더 파일</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -46,20 +34,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="htif_hexwriter.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="memif.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
     <ClInclude Include="instruction.h">
       <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="elf.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="elfloader.h">
-      <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="elf\elf-file.h">
       <Filter>elf</Filter>

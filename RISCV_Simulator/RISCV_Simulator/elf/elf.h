@@ -1,6 +1,6 @@
 #pragma once
+#include <cstdint>
 /*
-
  References:
 
  - TIS Portable Formats Specification, Version 1.1 ELF: Executable and Linkable Format
@@ -18,12 +18,12 @@
  * and LP64, which supports Windows and SVR4 ABIs for x86 and RISC-V.
  */
 
-typedef unsigned char      _elf_u8;
-typedef unsigned short int _elf_u16;
-typedef signed int         _elf_s32;
-typedef unsigned int       _elf_u32;
-typedef signed long long   _elf_s64;
-typedef unsigned long long _elf_u64;
+typedef unsigned char		_elf_u8;
+typedef unsigned short		_elf_u16;
+typedef signed int			_elf_s32;
+typedef unsigned int		_elf_u32;
+typedef signed long long	_elf_s64;
+typedef unsigned long long	_elf_u64;
 
 // Elf32 types
 typedef _elf_u32 Elf32_Addr;
