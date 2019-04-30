@@ -32,11 +32,11 @@
     <ClCompile Include="elf\util.cpp">
       <Filter>elf</Filter>
     </ClCompile>
+    <ClCompile Include="RISCV_CPU.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="instruction.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
     <ClInclude Include="elf\elf-file.h">
       <Filter>elf</Filter>
     </ClInclude>
@@ -51,6 +51,21 @@
     </ClInclude>
     <ClInclude Include="elf\util.h">
       <Filter>elf</Filter>
+    </ClInclude>
+    <ClInclude Include="instruction.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="register.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RISCV_CPU.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="executable_insts.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
