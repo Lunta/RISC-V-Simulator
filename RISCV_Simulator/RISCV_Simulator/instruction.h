@@ -72,6 +72,7 @@ enum class InstFormat : uint8_t { INVALID, R_TYPE, R4_TYPE, I_TYPE, S_TYPE, B_TY
 
 enum class InstType : uint8_t {
 	INVALID
+	, STALL
 
 	// RV32I Base Inst Set
 	, LUI
@@ -273,7 +274,7 @@ enum class CSRType : uint8_t {
 constexpr InstType GetInstType(uint32_t inst);
 constexpr InstFormat GetInstFormat(InstType inst_type);
 std::string GetInstName(InstType inst_t);
-constexpr CSRType GetCSRType(uint32_t imm_11_0);
+constexpr CSRType GetCSRType(int32_t imm_11_0);
 
 constexpr InstType GetInstType(uint32_t inst) {
 	uint32_t opcode = (inst >> BIT_OFFSET_OPCODE) & BIT_ALIGN_MASK_OPCODE;
@@ -640,6 +641,7 @@ constexpr InstType GetInstType(uint32_t inst) {
 		}
 		break;
 	}
+	case 0: return InstType::STALL;
 	default:
 		std::cout << "[INVALID INSTRUCTION!]: "<< std::bitset<32>(inst) <<"\n";
 		break;
@@ -821,8 +823,9 @@ constexpr InstFormat GetInstFormat(InstType inst_type) {
 
 	case InstType::JAL:
 		return InstFormat::J_TYPE;
+
 	default:
-		std::cout << "INVALID instruction format!\n";
+		//std::cout << "INVALID instruction format!\n";
 		break;
 	}
 	return InstFormat::INVALID;
@@ -833,6 +836,7 @@ inline std::string GetInstName(InstType inst_t)
 	std::string name;
 	switch (inst_t) {
 	case InstType::INVALID: name = "INVALID"; break;
+	case InstType::STALL: name = "STALL"; break;
 
 	// RV32I Base Inst Set
 	case InstType::LUI:		name = "LUI"; break;
@@ -1016,7 +1020,7 @@ inline std::string GetInstName(InstType inst_t)
 	return name;
 }
 
-constexpr CSRType GetCSRType(uint32_t imm_i_11_0) {
+constexpr CSRType GetCSRType(int32_t imm_i_11_0) {
 	switch (imm_i_11_0) {
 	case 0x001: return CSRType::fflags;
 	case 0x002: return CSRType::frm;
@@ -1031,16 +1035,19 @@ constexpr CSRType GetCSRType(uint32_t imm_i_11_0) {
 	return CSRType::INVALID;
 }
 
-class RISCV_CPU;
+union IMM {
+	int32_t		s32;
+	uint32_t	u32;
+};
+
 class Instruction {
 public:
-	Instruction() {}
+	Instruction() : m_type(InstType::INVALID) {}
 	Instruction(uint32_t inst) {
 		m_bit = inst;
 		m_type = GetInstType(inst);
 		m_format = GetInstFormat(m_type);
-		m_imm_s32 = -1;
-		m_rd = m_rs1 = m_rs2 = m_rs3 = m_aq = m_rl = -1;
+		m_imm.s32 = m_rd = m_rs1 = m_rs2 = m_rs3 = m_aq = m_rl = -1;
 
 		switch (m_format) {
 		case InstFormat::R_TYPE: {
@@ -1088,11 +1095,21 @@ public:
 			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
 			m_rs1 = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_SRC1) & BIT_ALIGN_MASK_REGISTER_SRC1);
 
-			int32_t temp = (int32_t)((m_bit >> BIT_OFFSET_IMM_I_11_0) & BIT_ALIGN_MASK_IMM_I_11_0);
-			if (0 < (temp & BIT_ALIGN_MASK_IMM_I_11_0_SIGN)) {
-				temp = temp | ~(int32_t)BIT_ALIGN_MASK_IMM_I_11_0;
+			uint32_t temp = (m_bit >> BIT_OFFSET_IMM_I_11_0) & BIT_ALIGN_MASK_IMM_I_11_0;
+			switch (m_type) {
+			case InstType::SLLI:
+			case InstType::SRLI:
+			case InstType::SRAI:
+				//m_imm.u32 = temp & 0b00011111; // rv32i
+				m_imm.u32 = temp & 0b00111111;
+				break;
+			default:
+				if (0 < (temp & BIT_ALIGN_MASK_IMM_I_11_0_SIGN)) {
+					temp = temp | ~BIT_ALIGN_MASK_IMM_I_11_0;
+				}
+				m_imm.s32 = (int32_t)temp;
+				break;
 			}
-			m_imm_s32 = temp;
 			break;
 		}
 		case InstFormat::S_TYPE: {
@@ -1101,7 +1118,7 @@ public:
 
 			uint32_t imm11_5 = (m_bit >> BIT_OFFSET_IMM_S_11_5) & BIT_ALIGN_MASK_IMM_S_11_5;
 			uint32_t imm4_0 = (m_bit >> BIT_OFFSET_IMM_S_4_0) & BIT_ALIGN_MASK_IMM_S_4_0;
-			m_imm_u32 = (uint32_t)(imm4_0 | ((imm11_5 << 5) & 0b00001111'11100000));
+			m_imm.u32 = (imm4_0 | ((imm11_5 << 5) & 0b00001111'11100000));
 			break;
 		}
 		case InstFormat::B_TYPE: {
@@ -1112,20 +1129,20 @@ public:
 			uint32_t imm11 = (m_bit >> BIT_OFFSET_IMM_B_11) & BIT_ALIGN_MASK_IMM_B_11;
 			uint32_t imm10_5 = (m_bit >> BIT_OFFSET_IMM_B_10_5) & BIT_ALIGN_MASK_IMM_B_10_5;
 			uint32_t imm4_1 = (m_bit >> BIT_OFFSET_IMM_B_4_1) & BIT_ALIGN_MASK_IMM_B_4_1;
-			int32_t temp = (uint32_t)(((imm12 << 12)	& 0b00010000'00000000)
-									| ((imm11 << 11)	& 0b00001000'00000000)
-									| ((imm10_5 << 5)	& 0b00000111'11100000)
-									| ((imm4_1 << 1)	& 0b00000000'00011110));
+			uint32_t temp = (((imm12 << 12)		& 0b00010000'00000000)
+							| ((imm11 << 11)	& 0b00001000'00000000)
+							| ((imm10_5 << 5)	& 0b00000111'11100000)
+							| ((imm4_1 << 1)	& 0b00000000'00011110));
 			if (1 == imm12) {
-				temp = temp | ~(int32_t)0b00011111'11111111;
+				temp = temp | ~0b00011111'11111111;
 			}
 
-			m_imm_s32 = temp;
+			m_imm.s32 = (int32_t)temp;
 			break;
 		}
 		case InstFormat::U_TYPE: {
 			m_rd = (int8_t)((m_bit >> BIT_OFFSET_REGISTER_DEST) & BIT_ALIGN_MASK_REGISTER_DEST);
-			m_imm_u32 = (uint32_t)(m_bit & MASK_IMM_U_31_12);
+			m_imm.u32 = m_bit & MASK_IMM_U_31_12;
 			break;
 		}
 		case InstFormat::J_TYPE: {
@@ -1135,29 +1152,23 @@ public:
 			uint32_t imm19_12 = (m_bit >> BIT_OFFSET_IMM_J_19_12) & BIT_ALIGN_MASK_IMM_J_19_12;
 			uint32_t imm11 = (m_bit >> BIT_OFFSET_IMM_J_11) & BIT_ALIGN_MASK_IMM_J_11;
 			uint32_t imm10_1 = (m_bit >> BIT_OFFSET_IMM_J_10_1) & BIT_ALIGN_MASK_IMM_J_10_1;
-			int32_t temp = (int32_t)(((imm20 << 20)		& 0b00000000'00010000'00000000'00000000)
-									| ((imm19_12 << 12)	& 0b00000000'00001111'11110000'00000000)
-									| ((imm11 << 11)	& 0b00000000'00000000'00001000'00000000)
-									| ((imm10_1 << 1)	& 0b00000000'00000000'00000111'11111110));
+			uint32_t temp = (((imm20 << 20)		& 0b00000000'00010000'00000000'00000000)
+							| ((imm19_12 << 12)	& 0b00000000'00001111'11110000'00000000)
+							| ((imm11 << 11)	& 0b00000000'00000000'00001000'00000000)
+							| ((imm10_1 << 1)	& 0b00000000'00000000'00000111'11111110));
 			if (1 == imm20) {
-				temp = temp | ~(int32_t)0b00000000'00011111'11111111'11111111;
+				temp = temp | ~0b00000000'00011111'11111111'11111111;
 			}
 
-			m_imm_s32 = temp;
+			m_imm.s32 = (int32_t)temp;
 			break;
 		}
 		default:
-			std::cout << "INVALID instruction!\n";
-			while (true);
+			//std::cout << "INVALID instruction!\n";
+			//while (true);
 			break;
 		}
 	}
-
-	virtual void stage_inst_fecth(const RISCV_CPU& riscv_cpu) = 0;
-	virtual void stage_inst_decode_and_reg_fecth(const RISCV_CPU& riscv_cpu) = 0;
-	virtual void stage_execute_and_calc_addr(const RISCV_CPU& riscv_cpu) = 0;
-	virtual void stage_mem_access(const RISCV_CPU& riscv_cpu) = 0;
-	virtual void stage_write_back(const RISCV_CPU& riscv_cpu) = 0;
 
 public:
 	uint32_t		m_bit;
@@ -1169,10 +1180,7 @@ public:
 	int8_t			m_rs3;
 	int8_t			m_aq;
 	int8_t			m_rl;
-	union {
-		int32_t			m_imm_s32;
-		uint32_t		m_imm_u32;
-	};
+	IMM				m_imm;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Instruction& inst) {
@@ -1211,7 +1219,7 @@ inline std::ostream& operator<<(std::ostream& os, const Instruction& inst) {
 		os.width(2); os << std::to_string(inst.m_rd);
 		os.width(3); os << "x";
 		os.width(2); os << std::to_string(inst.m_rs1);
-		os.width(2); os << " " << std::to_string(inst.m_imm_s32);
+		os.width(2); os << " " << std::to_string(inst.m_imm.s32);
 		os.width(1); 
 		break;
 	case InstFormat::S_TYPE:
@@ -1220,7 +1228,7 @@ inline std::ostream& operator<<(std::ostream& os, const Instruction& inst) {
 		os.width(2); os << std::to_string(inst.m_rs1);
 		os.width(3); os << "x";
 		os.width(2); os << std::to_string(inst.m_rs2);
-		os.width(2); os << " " << std::to_string(inst.m_imm_u32);
+		os.width(2); os << " " << std::to_string(inst.m_imm.u32);
 		os.width(1);
 		break;
 	case InstFormat::B_TYPE:
@@ -1229,14 +1237,14 @@ inline std::ostream& operator<<(std::ostream& os, const Instruction& inst) {
 		os.width(2); os << std::to_string(inst.m_rs1);
 		os.width(3); os << "x";
 		os.width(2); os << std::to_string(inst.m_rs2);
-		os.width(2); os << " " << std::to_string(inst.m_imm_s32);
+		os.width(2); os << " " << std::to_string(inst.m_imm.s32);
 		os.width(1);
 		break;
 	case InstFormat::U_TYPE:
 		os.fill(' ');
 		os.width(2); os << "x";
 		os.width(2); os << std::to_string(inst.m_rd);
-		os.width(2); os << "  0x" << std::hex << inst.m_imm_u32;
+		os.width(2); os << "  0x" << std::hex << inst.m_imm.u32;
 		os.flags(std::ios::dec);
 		os.width(1);
 		break;
@@ -1244,7 +1252,7 @@ inline std::ostream& operator<<(std::ostream& os, const Instruction& inst) {
 		os.fill(' ');
 		os.width(2); os << "x";
 		os.width(2); os << std::to_string(inst.m_rd);
-		os.width(2); os << " " << inst.m_imm_s32;
+		os.width(2); os << " " << inst.m_imm.s32;
 		os.width(1);
 		break;
 	}

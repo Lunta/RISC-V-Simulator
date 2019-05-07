@@ -1,7 +1,9 @@
 #include "RISCV_CPU.h"
 
 int main() {
-	RISCV_CPU riscv_cpu("hello.elf");
+	RISCV_CPU* riscv_cpu = new RISCV_CPU_5STAGE_IN_ORDER("hello.elf");
+	riscv_cpu->run();
+	delete riscv_cpu;
 
 	//elf_file elf("hello.elf");
 	//std::vector<Instruction> insts;
